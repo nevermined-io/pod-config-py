@@ -68,7 +68,16 @@ def run(args):
 
         if service_agreement:
             sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
-            logging.info(f"consumed asset {did} with service agreement {sa_id}")
+            logging.info(f"ordered asset {did} with service agreement {sa_id}")
+
+            try:
+                nevermined.assets.access(
+                    sa_id, did, service_agreement.index, consumer, config.downloads_path
+                )
+                logging.info(f"accessed asset {did}")
+            except KeyError:
+                logging.error(f"error accessing asset {did}. No files in ddo")
+                continue
         else:
             logging.warning(f"asset {did} contains no service of type `access`")
 
