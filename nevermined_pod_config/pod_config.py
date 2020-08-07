@@ -27,6 +27,14 @@ def run(args):
     config = Config(options_dict=options)
     logging.debug(f"nevermined config: {config}")
 
+    # setup paths
+    inputs_path = args.path / "inputs"
+    inputs_path.mkdir()
+    outputs_path = args.path / "outputs"
+    outputs_path.mkdir()
+    transformations_path = args.path / "transformations"
+    transformations_path.mkdir()
+
     # setup nevermined
     nevermined = Nevermined(config)
 
@@ -70,14 +78,24 @@ def run(args):
             sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
             logging.info(f"ordered asset {did} with service agreement {sa_id}")
 
-            try:
+            if ddo.metadata["main"]["type"] == "dataset":
                 nevermined.assets.access(
-                    sa_id, did, service_agreement.index, consumer, config.downloads_path
+                    sa_id,
+                    did,
+                    service_agreement.index,
+                    consumer,
+                    inputs_path.as_posix(),
                 )
                 logging.info(f"accessed asset {did}")
-            except KeyError:
-                logging.error(f"error accessing asset {did}. No files in ddo")
-                continue
+            elif ddo.metadata["main"]["type"] == "algorithm":
+                nevermined.assets.access(
+                    sa_id,
+                    did,
+                    service_agreement.index,
+                    consumer,
+                    transformations_path.as_posix(),
+                )
+                logging.info(f"accessed asset {did}")
         else:
             logging.warning(f"asset {did} contains no service of type `access`")
 
