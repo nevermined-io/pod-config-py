@@ -3,9 +3,11 @@ import json
 import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+import time
 
 from nevermined_sdk_py import Config, Nevermined
 from nevermined_sdk_py.nevermined.accounts import Account
+from nevermined_sdk_py.nevermined.keeper import NeverminedKeeper as Keeper
 from web3 import Web3
 
 
@@ -37,6 +39,7 @@ def run(args):
 
     # setup nevermined
     nevermined = Nevermined(config)
+    keeper = Keeper.get_instance()
 
     # setup consumer
     # here we need to create a temporary key file from the credentials
@@ -75,7 +78,13 @@ def run(args):
         service_agreement = ddo.get_service("access")
 
         if service_agreement:
-            sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
+            sa_id = None
+            while sa_id is None:
+                try:
+                    sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
+                except ValueError:
+                    logging.info(f"retrying ordering of the asset {did}")
+                    time.sleep(30)
             logging.info(f"ordered asset {did} with service agreement {sa_id}")
 
             if ddo.metadata["main"]["type"] == "dataset":
@@ -87,6 +96,11 @@ def run(args):
                     inputs_path.as_posix(),
                 )
                 logging.info(f"accessed asset {did}")
+                event = keeper.access_secret_store_condition.subscribe_condition_fulfilled(
+                    sa_id, 60, None, (), wait=True
+                )
+                assert event is not None, "Access condition not found"
+                print(f"Access condition fulfilled for {sa_id}")
             elif ddo.metadata["main"]["type"] == "algorithm":
                 nevermined.assets.access(
                     sa_id,
@@ -95,6 +109,11 @@ def run(args):
                     consumer,
                     transformations_path.as_posix(),
                 )
+                event = keeper.access_secret_store_condition.subscribe_condition_fulfilled(
+                    sa_id, 60, None, (), wait=True
+                )
+                assert event is not None, "Access condition not found"
+                print(f"Access condition fulfilled for {sa_id}")
                 logging.info(f"accessed asset {did}")
         else:
             logging.warning(f"asset {did} contains no service of type `access`")
