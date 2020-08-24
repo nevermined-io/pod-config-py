@@ -79,11 +79,15 @@ def run(args):
 
         if service_agreement:
             sa_id = None
+            retry = 0
             while sa_id is None:
                 try:
                     sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
                 except ValueError:
+                    if retry == 3:
+                        raise
                     logging.info(f"retrying ordering of the asset {did}")
+                    retry += 1
                     time.sleep(30)
             logging.info(f"ordered asset {did} with service agreement {sa_id}")
 
@@ -96,11 +100,6 @@ def run(args):
                     inputs_path.as_posix(),
                 )
                 logging.info(f"accessed asset {did}")
-                event = keeper.access_secret_store_condition.subscribe_condition_fulfilled(
-                    sa_id, 60, None, (), wait=True
-                )
-                assert event is not None, "Access condition not found"
-                print(f"Access condition fulfilled for {sa_id}")
             elif ddo.metadata["main"]["type"] == "algorithm":
                 nevermined.assets.access(
                     sa_id,
@@ -109,11 +108,6 @@ def run(args):
                     consumer,
                     transformations_path.as_posix(),
                 )
-                event = keeper.access_secret_store_condition.subscribe_condition_fulfilled(
-                    sa_id, 60, None, (), wait=True
-                )
-                assert event is not None, "Access condition not found"
-                print(f"Access condition fulfilled for {sa_id}")
                 logging.info(f"accessed asset {did}")
         else:
             logging.warning(f"asset {did} contains no service of type `access`")
