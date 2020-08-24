@@ -3,9 +3,11 @@ import json
 import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+import time
 
 from nevermined_sdk_py import Config, Nevermined
 from nevermined_sdk_py.nevermined.accounts import Account
+from nevermined_sdk_py.nevermined.keeper import NeverminedKeeper as Keeper
 from web3 import Web3
 
 
@@ -37,6 +39,7 @@ def run(args):
 
     # setup nevermined
     nevermined = Nevermined(config)
+    keeper = Keeper.get_instance()
 
     # setup consumer
     # here we need to create a temporary key file from the credentials
@@ -75,7 +78,17 @@ def run(args):
         service_agreement = ddo.get_service("access")
 
         if service_agreement:
-            sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
+            sa_id = None
+            retry = 0
+            while sa_id is None:
+                try:
+                    sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
+                except ValueError:
+                    if retry == 3:
+                        raise
+                    logging.info(f"retrying ordering of the asset {did}")
+                    retry += 1
+                    time.sleep(30)
             logging.info(f"ordered asset {did} with service agreement {sa_id}")
 
             if ddo.metadata["main"]["type"] == "dataset":
