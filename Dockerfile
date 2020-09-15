@@ -11,6 +11,5 @@ COPY . /nevermined-pod-config
 WORKDIR /nevermined-pod-config
 
 RUN pip install .
-RUN pip install contracts-lib-py==0.4.0
 
 ENTRYPOINT pod-config --help

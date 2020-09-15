@@ -1,9 +1,9 @@
 import argparse
 import json
 import logging
+import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-import time
 
 from nevermined_sdk_py import Config, Nevermined
 from nevermined_sdk_py.nevermined.accounts import Account
@@ -72,47 +72,24 @@ def run(args):
     logging.debug(f"inputs: {inputs}")
     logging.debug(f"transformations: {transformations}")
 
-    # consume assets
-    for did in inputs + transformations:
+    # download assets
+    for did in inputs:
+        ddo = nevermined.assets.resolve(did)
+        service_agreement = ddo.get_service("compute")
+
+        logging.info(f"downloading asset {ddo.did}")
+        nevermined.assets.download(
+            ddo.did, service_agreement.index, consumer, inputs_path.as_posix()
+        )
+
+    for did in transformations:
         ddo = nevermined.assets.resolve(did)
         service_agreement = ddo.get_service("access")
 
-        if service_agreement:
-            sa_id = None
-            retry = 0
-            while sa_id is None:
-                try:
-                    sa_id = nevermined.assets.order(did, service_agreement.index, consumer)
-                except ValueError:
-                    if retry == 3:
-                        raise
-                    logging.info(f"retrying ordering of the asset {did}")
-                    retry += 1
-                    time.sleep(30)
-            logging.info(f"ordered asset {did} with service agreement {sa_id}")
-
-            if ddo.metadata["main"]["type"] == "dataset":
-                nevermined.assets.access(
-                    sa_id,
-                    did,
-                    service_agreement.index,
-                    consumer,
-                    inputs_path.as_posix(),
-                )
-                logging.info(f"accessed asset {did}")
-            elif ddo.metadata["main"]["type"] == "algorithm":
-                nevermined.assets.access(
-                    sa_id,
-                    did,
-                    service_agreement.index,
-                    consumer,
-                    transformations_path.as_posix(),
-                )
-                logging.info(f"accessed asset {did}")
-        else:
-            logging.warning(f"asset {did} contains no service of type `access`")
-
-    return nevermined
+        logging.info(f"downloading asset {ddo.did}")
+        nevermined.assets.download(
+            ddo.did, service_agreement.index, consumer, transformations_path.as_posix()
+        )
 
 
 def main():
