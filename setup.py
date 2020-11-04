@@ -23,8 +23,8 @@ dev_requirements = []
 docs_requirements = []
 
 setup(
-    author="keyko-io",
-    author_email="root@keyko.io",
+    author="nevermined-io",
+    author_email="root@nevermined.io",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
@@ -48,8 +48,8 @@ setup(
     packages=find_packages(),
     setup_requires=setup_requirements,
     tests_require=test_requirements,
-    url="https://github.com/keyko-io/nevermined-pod-config-py",
-    version="0.1.0",
+    url="https://github.com/nevermined-io/pod-config-py",
+    version="0.1.1",
     zip_safe=False,
     entry_points={
         "console_scripts": ["pod-config=nevermined_pod_config.pod_config:main"]
