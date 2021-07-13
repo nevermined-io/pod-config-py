@@ -9,7 +9,7 @@ with open("README.md") as readme_file:
     readme = readme_file.read()
 
 install_requirements = [
-    "nevermined-sdk-py==0.6.0",
+    "nevermined-sdk-py==0.10.0",
     "web3==5.9.0",
 ]
 
@@ -49,7 +49,7 @@ setup(
     setup_requires=setup_requirements,
     tests_require=test_requirements,
     url="https://github.com/nevermined-io/pod-config-py",
-    version="0.1.1",
+    version="0.1.2",
     zip_safe=False,
     entry_points={
         "console_scripts": ["pod-config=nevermined_pod_config.pod_config:main"]
